@@ -29,6 +29,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   let mediaStream
   let mediaStreamConstraints
+  let subscriberStreamNames = []
 
   let host = window.location.hostname
   let streamName = 'stream'
@@ -39,6 +40,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const hostField = document.getElementById('host-field')
   const streamNameField = document.getElementById('streamname-field')
   const postProvisionButton = document.getElementById('post-button')
+  const mainPublishContainer = document.getElementById('main_publisher-container')
+  const sessionPublishContainer = document.getElementById('session_publisher-container')
 
   const STATE_SETUP = 'setup'
   const STATE_SESSION = 'session'
@@ -47,11 +50,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     switch (state) {
       case STATE_SETUP:
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-setup')).forEach(el => el.classList.add('hidden'))
+        Array.prototype.slice.call(document.querySelectorAll('.remove-on-session')).forEach(el => el.classList.remove('hidden'))
         postProvisionButton.addEventListener('click', handlePostProvision, true) 
         break;
       case STATE_SESSION:
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-session')).forEach(el => el.classList.add('hidden'))
-        postProvisionButton.removeEventListener('click', handlePostProvision, true) 
+        Array.prototype.slice.call(document.querySelectorAll('.remove-on-setup')).forEach(el => el.classList.remove('hidden'))
+        postProvisionButton.removeEventListener('click', handlePostProvision, true)
+        const pubView = document.querySelector('#red5pro-publisher')
+        pubView.parentNode.removeChild(pubView)
+        sessionPublishContainer.appendChild(pubView)
+        pubView.classList.add('red5pro-publisher')
         break;
     }
   }
@@ -92,16 +101,53 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     selectedProvisions = list
   }
 
+  const bitrateFromResolution = (width, height) => {
+    if (height >= 1080) return 3000
+    if (height >= 720) return 1500
+    if (height >= 540) return 750
+    if (height >= 360) return 512
+    return 256
+  }
+
+  const padVariants = (streamName, list, highestVariant, length) => {
+    const { properties: { videoWidth, videoHeight } } = highestVariant
+    while (list.length < length) {
+      const nextIndex = list.length + 1
+      const multiplier = (length-(nextIndex-1)) * ((100 / length) / 100)
+      const width = Math.floor(videoWidth * multiplier)
+      const height = Math.floor(videoHeight * multiplier)
+      list.push({...highestVariant, ...{
+        level: nextIndex,
+        name: `${streamName}_${nextIndex}`,
+        properties: {
+          videoBR: bitrateFromResolution(width, height) * 1000,
+          videoWidth: width,
+          videoHeight: height
+        }
+      }})
+    }
+    return list
+  }
+
+  const removeStoredProvisionAndRepost = async (name) => {
+    try {
+      await window.provisionUtil.deleteTranscode(host, `live`, `${name}`)
+      handlePostProvision()
+    } catch (e) {
+      console.error(e)
+    }
+  }
+
   const handlePostProvision = async () => {
-    if (selectedProvisions.length < 4) {
-      showErrorAlert('Please select 4 Variants for provisioning the transcoder.')
+    if (selectedProvisions.length < 1) {
+      showErrorAlert('Please select the High-Level Variant for provisioning the transcoder.')
       return
     }
     const host = hostField.value
     const name = streamNameField.value
     let framerate = 15
-    const streams = selectedProvisions.map((res, index) => {
-      if (index === 0) framerate = res.frameRate
+    // Only top level in list.
+    let streams = selectedProvisions.map((res, index) => {
       return {
         level: index+1,
         name: `${name}_${index+1}`,
@@ -111,26 +157,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
           videoHeight: res.height
         }
       }
-    }).reverse()
+    })
     const highestLevel = streams.find(e => e.level === 1)
-    transcoderPOST.meta.stream = streams
+    const highestLevelIndex = streams.findIndex(e => e.level === 1)
+    framerate = selectedProvisions[highestLevelIndex].frameRate
+    streams = padVariants(name, streams, highestLevel, 4)
+    transcoderPOST.meta.stream = streams.reverse()
+    subscriberStreamNames = streams.map(v => v.name).reverse()
     try {
       console.log('POST', transcoderPOST)
-      const payload = await window.provisionUtil.postTranscode(host, `live/`, `${name}`, transcoderPOST)
+      const payload = await window.provisionUtil.postTranscode(host, `live`, `${name}`, transcoderPOST)
       console.log('PAYLOAD', payload)
       startBroadcastWithLevel(highestLevel, name, framerate)
+      startSubscribers(subscriberStreamNames)
     } catch (e) {
       console.error(e)
       if (/Provision already exists/.exec(e.message)) {
-        startBroadcastWithLevel(highestLevel, name, framerate)
+        removeStoredProvisionAndRepost(name)
       } else {
         showErrorAlert(e.message)
       }
     }
   }
 
-  const startBroadcastWithLevel = async (level, room, name, framerate) => {
-    setState(STATE_SESSION)
+  const startBroadcastWithLevel = async (level, name, framerate) => {
     const element = document.querySelector('#red5pro-publisher')
     const {
       properties: {
@@ -139,14 +189,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         videoBR
       }
     } = level
-    const deviceId = mediaStreamConstraints.video.deviceId.exact
-
+    const deviceId = mediaStreamConstraints.video.deviceId
     const constraints = {
       audio: true,
       video: {
         deviceId: deviceId,
-        width: { exact: videoWidth },
-        height: { exact: videoHeight },
+        width: videoWidth,
+        height: videoHeight,
         //        frameRate: { exact: framerate }
       }
     }
@@ -154,6 +203,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     let stream
     const bitrate = videoBR / 1000
     try {
+      console.log('CONSTRAINTS', constraints)
       stream = await navigator.mediaDevices.getUserMedia(constraints)
     } catch (e) {
       console.error(e)
@@ -166,9 +216,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     doPublish(mediaStream, name, bitrate)
   }
 
-  const doPublish = async (stream, room, name, bitrate = 256) => {
+  const doPublish = async (stream, name, bitrate = 256) => {
     const hostValue = hostField.value
-    const streamNameToUse = isTranscode ? `${name}_1` : name
+    const streamNameToUse =  `${name}_1`
     let config = {
       protocol: isIPOrLocalhost(hostValue) ? 'ws' : 'wss',
       port: isIPOrLocalhost(hostValue) ? 5080 : 443,
@@ -196,17 +246,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const element = document.querySelector('#red5pro-publisher')
     const constraints = {
       audio: true,
-      video: {
-        width: {
-          exact: 640
-        },
-        height: {
-          exact: 360
-        },
-        frameRate: {
-          exact: 15
-        }
-      }
+      video: true
     }
     try {
       mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
@@ -220,6 +260,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     } catch (e) {
       console.error(e)
     }
+  }
+
+  const startSubscribers = streamNames => {
+    console.log('start subscribers', streamNames)
   }
 
   window.registerProvisionCallback(handleProvisionChange)

@@ -37,9 +37,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   // List of default HD resolutions. Used in determining browser support for Camera.
   const hd = [
     {width: 256, height: 144, frameRate: 15, bandwidth: 256, media: undefined},
+    {width: 320, height: 240, frameRate: 15, bandwidth: 256, media: undefined},
     {width: 512, height: 288, frameRate: 15, bandwidth: 256, media: undefined},
     {width: 640, height: 360, frameRate: 15, bandwidth: 512, media: undefined},
-    {width: 720, height: 480, frameRate: 15, bandwidth: 512, media: undefined},
+    {width: 640, height: 480, frameRate: 15, bandwidth: 512, media: undefined},
+    {width: 720, height: 480, frameRate: 15, bandwidth: 750, media: undefined},
     {width: 960, height: 540, frameRate: 15, bandwidth: 750, media: undefined},
     {width: 1280, height: 720, frameRate: 30, bandwidth: 1500, media: undefined},
     {width: 1920, height: 1080, frameRate: 30, bandwidth: 3000, media: undefined},
@@ -49,7 +51,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const onTranscodeSelect = el => {
     const id = parseInt(el.currentTarget.value, 10)
     if (el.currentTarget.checked) {
-      if (selectedResolutions.length === 4) {
+      if (selectedResolutions.length === 1) {
         const reject = selectedResolutions.pop()
         document.querySelector(`input[value="${hd.findIndex(o => o === reject)}"]`).checked = false
       }
@@ -167,25 +169,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     })
   }
 
-  const updateMediaStreamTrack = (constraints, trackKind, callback, element) => {
-    navigator.mediaDevices.getUserMedia(constraints)
-      .then(function (stream) {
-        callback(stream, constraints)
-        element.srcObject = stream
-      })
-      .catch (function (error) {
-        console.error('Could not replace track : ' + error.message)
-      })
+  const updateMediaStreamTrack = async (constraints, trackKind, callback, element) => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia(constraints)
+      callback(stream, constraints)
+      element.srcObject = stream
+    } catch (error) {
+      console.error('Could not replace track : ' + error.message)
+    }
   }
 
   const onCameraSelect = (camera, constraints, callback, element) => {
     let newConstraints = {...constraints}
     if (newConstraints.video && typeof newConstraints.video !== 'boolean') {
-      newConstraints.video.deviceId = { exact: camera }
+      newConstraints.video.deviceId = camera
     }
     else {
       newConstraints.video = {
-        deviceId: { exact: camera }
+        deviceId: camera
       }
     }
     updateMediaStreamTrack(newConstraints, 'video', callback, element);
@@ -230,10 +231,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       const cameraDevices = devices.filter(d => d.kind === 'videoinput')
       const cameraId = updateCameraDeviceList(cameraDevices, videoTracks[0], constraints, callback, element)
       if (cameraId > -1) {
-        if (!constraints.video.deviceId) {
-          constraints.video.deviceId = {}
+        if (typeof constraints.video === 'boolean') {
+          constraints.video = {
+            deviceId: undefined
+          }
         }
-        constraints.video.deviceId.exact = cameraDevices[cameraId].deviceId
+        constraints.video.deviceId = cameraDevices[cameraId].deviceId
       }
       callback(mediaStream, constraints)
     } catch (e) {

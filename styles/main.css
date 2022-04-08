@@ -1,3 +1,8 @@
 .hidden {
   display: none;
 }
+
+.main_red5pro-publisher {
+  max-height: calc(100vh * 0.33);
+  background-color: black;
+}
