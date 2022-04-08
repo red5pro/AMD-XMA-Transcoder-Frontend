@@ -36,11 +36,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   // List of default HD resolutions. Used in determining browser support for Camera.
   const hd = [
-    {width: 160, height: 120, frameRate: 15, bandwidth: 256, media: undefined},
-    {width: 320, height: 240, frameRate: 15, bandwidth: 256, media: undefined},
+    {width: 256, height: 144, frameRate: 15, bandwidth: 256, media: undefined},
+    {width: 512, height: 288, frameRate: 15, bandwidth: 256, media: undefined},
     {width: 640, height: 360, frameRate: 15, bandwidth: 512, media: undefined},
-    {width: 640, height: 480, frameRate: 15, bandwidth: 512, media: undefined},
-    {width: 854, height: 480, frameRate: 15, bandwidth: 750, media: undefined},
+    {width: 720, height: 480, frameRate: 15, bandwidth: 512, media: undefined},
+    {width: 960, height: 540, frameRate: 15, bandwidth: 750, media: undefined},
     {width: 1280, height: 720, frameRate: 30, bandwidth: 1500, media: undefined},
     {width: 1920, height: 1080, frameRate: 30, bandwidth: 3000, media: undefined},
     {width: 3840, height: 2160, frameRate: 30, bandwidth: 4500, media: undefined}

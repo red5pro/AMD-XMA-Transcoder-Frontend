@@ -34,7 +34,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   let streamName = 'stream'
   let ipReg = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/
   let localhostReg = /^localhost.*/
-  const isIPOrLocalhost = ipReg.exec(host) || localhostReg.exec(host)
+  const isIPOrLocalhost = host => ipReg.exec(host) || localhostReg.exec(host)
 
   const hostField = document.getElementById('host-field')
   const streamNameField = document.getElementById('streamname-field')
@@ -56,7 +56,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 
-  const showErrorAlert = (message) => {
+  const showErrorAlert = message => {
     const al = document.querySelector('.alert')
     const msg = al.querySelector('.alert-message')
     const submit = al.querySelector('#alert-submit')
@@ -66,6 +66,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       al.classList.add('hidden')
     })
     window.scrollTo(0, 0)
+  }
+
+  const onPublisherEvent = event => {
+    console.log('[Red5ProPublisher] ' + event.type + '.')
   }
 
   let transcoderPOST = {
@@ -112,7 +116,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     transcoderPOST.meta.stream = streams
     try {
       console.log('POST', transcoderPOST)
-      const payload = await window.provisionUtil.postTranscode(host, `live/`, `${name}`, transcoderPOST, smToken)
+      const payload = await window.provisionUtil.postTranscode(host, `live/`, `${name}`, transcoderPOST)
       console.log('PAYLOAD', payload)
       startBroadcastWithLevel(highestLevel, name, framerate)
     } catch (e) {
@@ -140,10 +144,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const constraints = {
       audio: true,
       video: {
-        deviceId: { exact: deviceId },
+        deviceId: deviceId,
         width: { exact: videoWidth },
         height: { exact: videoHeight },
-        frameRate: { exact: framerate }
+        //        frameRate: { exact: framerate }
       }
     }
 
@@ -152,8 +156,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     try {
       stream = await navigator.mediaDevices.getUserMedia(constraints)
     } catch (e) {
+      console.error(e)
       showErrorAlert(e.message.length === 0 ? e.name : e.message)
-      setState(STATE_TRANSCODE)
+      setState(STATE_SETUP)
       return
     }
     mediaStream = stream
@@ -161,8 +166,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     doPublish(mediaStream, name, bitrate)
   }
 
-  const doPublish = (mediaStream, name, bitrate) => {
-    console.log('doPublish')
+  const doPublish = async (stream, room, name, bitrate = 256) => {
+    const hostValue = hostField.value
+    const streamNameToUse = isTranscode ? `${name}_1` : name
+    let config = {
+      protocol: isIPOrLocalhost(hostValue) ? 'ws' : 'wss',
+      port: isIPOrLocalhost(hostValue) ? 5080 : 443,
+      host: hostValue,
+      bandwidth: {
+        video: bitrate
+      },
+      app: 'live',
+      streamName: streamNameToUse
+    }
+
+    try {
+      let publisher = new red5prosdk.RTCPublisher()
+      await publisher.initWithStream(config, stream)
+      publisher.on('*', onPublisherEvent)
+      await publisher.publish(streamNameToUse)
+      setState(STATE_SESSION)
+    } catch (e) {
+      console.error(e)
+      showErrorAlert(e.message)
+    }
   }
 
   const startPreview = async () => {

@@ -1,0 +1,3 @@
+window.provisionUtil = {
+  postTranscode: () => true
+}
