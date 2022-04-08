@@ -1,0 +1,70 @@
+<!doctype html>
+<html>
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/assets/favicon.17e50649.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="https://unpkg.com/red5pro-webrtc-sdk@latest/red5pro-sdk.min.js"></script>
+    <link rel="stylesheet" href="styles/main.css">
+  </head>
+  <body>
+    <div id="app">
+     <div class="alert hidden">
+      <p class="alert-message"></p>
+      <p><button id="alert-submit">OK</button></p>
+     </div>
+     <div class="main">
+      <div id="publisher-container" class="publisher-section publisher-container remove-on-session">
+         <video id="red5pro-publisher"
+            controls autoplay playsinline muted
+            width="100%" height="100%">
+         </video>
+        <div class="settings-area">
+          <p>
+            <label for="host-field" class="device-label">Host:</label>
+            <input id="host-field" name="room-field" class="settings-input">
+          </p>
+        </div>
+        <div id="publisher-settings" class="publisher-settings">
+          <p>
+            <label class="device-label" for="streamname-field">Stream Name:</label>
+            <input id="streamname-field" name="streamname-field" class="settings-input">
+          </p>
+          <hr class="paddedHR" />
+          <p>
+            <label class="device-label" for="camera-select">Camera:</label>
+            <select class="control device-control settings-input" name="camera-select" id="camera-select"></select>
+          </p>
+          <div class="settings-field settings-collapsable" style="padding-bottom: 1rem">
+            <p class="centered status-field">Supported Constraints</p>
+            <table class="table">
+              <thead>
+                <tr>
+                  <td class="table-entry">Resolution</td>
+                  <td class="table-entry">Framerate</td>
+                  <td class="table-entry">Bitrate (Kbps)</td>
+                  <td class="table-entry">Is Supported</td>
+                  <td class="table-entry">Use in Transcoder (4)</td>
+                </tr>
+              </thead>
+              <tbody id="res-container"></tbody>
+            </table>
+            <div>
+              <button id="post-button" class="ui-button">Start Broadcast</button>
+            </div>
+          </div>
+        </div>
+      </div>
+        <div class="session remove-on-setup">
+          <div class="session_broadcast">
+          </div>
+          <div class="session_subscribe">
+          </div>
+        </div>
+      </div>
+    </div>
+    <script src="scripts/device-selector-util.js"></script>
+    <script src="scripts/main.js"></script>
+  </body>
+</html>
+
