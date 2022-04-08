@@ -23,7 +23,7 @@ NONINFRINGEMENT.   IN  NO  EVENT  SHALL INFRARED5, INC. BE LIABLE FOR ANY CLAIM,
 WHETHER IN  AN  ACTION  OF  CONTRACT,  TORT  OR  OTHERWISE,  ARISING  FROM,  OUT  OF  OR  IN CONNECTION 
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-((window, navigator, red5prosdk) => { // eslint-disable-line no-unused-vars
+((window, navigator, red5prosdk, SubscriberBlock) => { // eslint-disable-line no-unused-vars
 
   red5prosdk.setLogLevel(red5prosdk.LOG_LEVELS.TRACE)
 
@@ -42,6 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const postProvisionButton = document.getElementById('post-button')
   const mainPublishContainer = document.getElementById('main_publisher-container')
   const sessionPublishContainer = document.getElementById('session_publisher-container')
+  const sessionSubscribeContainer = document.getElementById('session_subscribe-container')
 
   const STATE_SETUP = 'setup'
   const STATE_SESSION = 'session'
@@ -263,7 +264,23 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 
   const startSubscribers = streamNames => {
+    const hostValue = hostField.value
+    const baseConfig = {
+      protocol: isIPOrLocalhost(hostValue) ? 'ws' : 'wss',
+      port: isIPOrLocalhost(hostValue) ? 5080 : 443,
+      host: hostValue,
+      app: 'live'
+    }
     console.log('start subscribers', streamNames)
+    streamNames.forEach(name => {
+      try {
+        const sub = new SubscriberBlock(baseConfig, name)
+        sessionSubscribeContainer.appendChild(sub.init())
+        sub.start()
+      } catch (e) {
+        console.error(e)
+      }
+    })
   }
 
   window.registerProvisionCallback(handleProvisionChange)
@@ -273,4 +290,4 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   hostField.value = host
   streamNameField.value = streamName
 
-})(window, navigator, window.red5prosdk)
+})(window, navigator, window.red5prosdk, window.SubscriberBlock)
