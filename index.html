@@ -9,12 +9,18 @@
     <link rel="stylesheet" href="styles/main.css">
   </head>
   <body>
-    <div id="app">
+    <div id="app" class="app">
       <div class="alert hidden">
         <p class="alert-message"></p>
         <p><button id="alert-submit">OK</button></p>
       </div>
+      <div class="logo-bar">
+        <img src="assets/Red5Pro_logo.svg" height="100%">
+      </div>
       <div class="main remove-on-session">
+        <div>
+          <p id="publisher-status-field" class="status-field hidden"></p>
+        </div>
         <div id="main_publisher-container" class="publisher-section publisher-container">
           <video id="red5pro-publisher"
             class="main_red5pro-publisher"
@@ -32,28 +38,30 @@
               <label class="device-label" for="streamname-field">Stream Name:</label>
               <input id="streamname-field" name="streamname-field" class="settings-input disable-on-starting">
             </p>
-            <hr class="paddedHR" />
-            <p>
+            <p class="settings-field">
               <label class="device-label" for="camera-select">Camera:</label>
               <select class="control device-control settings-input disable-on-starting" name="camera-select" id="camera-select"></select>
             </p>
-            <div class="settings-collapsable" style="padding-bottom: 1rem">
-              <p class="centered status-field">Supported Constraints</p>
-              <table class="table">
-                <thead>
-                  <tr>
-                    <td class="table-entry">Resolution</td>
-                    <td class="table-entry">Framerate</td>
-                    <td class="table-entry">Bitrate (Kbps)</td>
-                    <td class="table-entry">Is Supported</td>
-                    <td class="table-entry">Use as High-Level Variant in Transcoder</td>
-                  </tr>
-                </thead>
-                <tbody id="res-container"></tbody>
-              </table>
-              <div>
-                <button id="post-button" class="ui-button disable-on-starting">Start Broadcast</button>
-              </div>
+          </div>
+        </div>
+        <div>
+          <hr class="paddedHR" />
+          <div class="settings-collapsable">
+            <p class="centered status-field">Supported Constraints</p>
+            <table class="table">
+              <thead>
+                <tr>
+                  <td class="table-entry">Resolution</td>
+                  <td class="table-entry">Framerate</td>
+                  <td class="table-entry">Bitrate (Kbps)</td>
+                  <td class="table-entry">Is Supported</td>
+                  <td class="table-entry">Use as High-Level Variant in Transcoder</td>
+                </tr>
+              </thead>
+              <tbody id="res-container"></tbody>
+            </table>
+            <div class="post-controls">
+              <button id="post-button" class="ui-button disable-on-starting">Start Broadcast</button>
             </div>
           </div>
         </div>

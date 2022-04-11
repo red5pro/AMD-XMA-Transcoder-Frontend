@@ -39,6 +39,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   const hostField = document.getElementById('host-field')
   const streamNameField = document.getElementById('streamname-field')
+  const publisherStatusField = document.getElementById('publisher-status-field')
   const postProvisionButton = document.getElementById('post-button')
   const mainPublishContainer = document.getElementById('main_publisher-container')
   const sessionPublishContainer = document.getElementById('session_publisher-container')
@@ -87,6 +88,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   const onPublisherEvent = event => {
     console.log('[Red5ProPublisher] ' + event.type + '.')
+    publisherStatusField.classList.remove('hidden')
+    publisherStatusField.innerText = event.type
     if (event.type === 'Publish.Available') {
       setState(STATE_SESSION)
     }
@@ -212,6 +215,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     streams = padVariants(name, streams, highestLevel, 4)
     transcoderPOST.meta.stream = streams.reverse()
     subscriberStreamNames = streams.map(v => v.name).reverse()
+    window.scrollTo(0, 0)    
     try {
       console.log('POST', transcoderPOST)
       const payload = await window.provisionUtil.postTranscode(host, `live`, `${name}`, transcoderPOST)
