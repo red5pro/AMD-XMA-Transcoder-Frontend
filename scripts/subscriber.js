@@ -64,6 +64,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     onSubscriberEvent (event) {
       if (event.type === 'Subscribe.Time.Update') return
       console.log(`[Subscriber+${this.subscriberId}] :: ${event.type}`)
+      if (event.type === 'Subscribe.Play.Unpublish') {
+        this.retry()
+      }
     }
 
     retry () {

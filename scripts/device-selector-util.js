@@ -95,7 +95,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       transcodeSelect.type = 'checkbox'
       transcodeSelect.value = index
       transcodeSelect.classList.add('transcode-select')
-      transcodeSelect.classList.add('disable-on-start')
+      transcodeSelect.classList.add('disable-on-starting')
 
       tr.id = 'dimension-' + index
       tr.classList.add('settings-control')

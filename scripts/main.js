@@ -144,6 +144,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   let selectedProvisions = []
   const handleProvisionChange = list => {
     selectedProvisions = list
+    // We limit to the one selection, highest out.
     reassignMedia(selectedProvisions[0])
   }
 
@@ -216,7 +217,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       const payload = await window.provisionUtil.postTranscode(host, `live`, `${name}`, transcoderPOST)
       console.log('PAYLOAD', payload)
       await startBroadcastWithLevel(highestLevel, name, framerate)
-      //      startSubscribers(subscriberStreamNames)
+      startSubscribers(subscriberStreamNames)
     } catch (e) {
       console.error(e)
       if (/Provision already exists/.exec(e.message)) {
@@ -238,30 +239,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         videoBR
       }
     } = level
-    const {
-      video: {
-        deviceId
-      }
-    }  = mediaStreamConstraints
-    const id = deviceId.hasOwnProperty('exact') ? deviceId.exact : deviceId
-    const constraints = {
-      audio: true,
-      video: {
-        deviceId: { exact: id },
-        width: { exact: videoWidth },
-        height: { exact: videoHeight },
-        //        frameRate: { exact: framerate }
-      }
-    }
-
-    let stream
     const bitrate = videoBR / 1000
     try {
-      //     console.log('CONSTRAINTS', constraints)
-      //      stream = await navigator.mediaDevices.getUserMedia(constraints)
-      //      mediaStream = stream
-      //      element.srcObject = mediaStream
-      await doPublish(mediaStream, name, bitrate)
+      await doPublish(mediaStream || element.srcObject, name, bitrate)
       return true
     } catch (e) {
       console.error(e)
