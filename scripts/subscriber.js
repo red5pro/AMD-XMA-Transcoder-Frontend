@@ -59,18 +59,39 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       this.subscriber = undefined
       this.retryTimer = 0
       this.retryDelay = (30 + getRandomBetween(10, 60)) * 100
+      this.statsInterval = 0
+      this.incomingWidth = 0
+      this.incomingHeight = 0
     }
 
     onSubscriberEvent (event) {
       if (event.type === 'Subscribe.Time.Update') return
       console.log(`[Subscriber+${this.subscriberId}] :: ${event.type}`)
-      if (event.type === 'Subscribe.Play.Unpublish') {
+      if (event.type === 'Subscribe.Play.Unpublish' || event.type === 'Subscribe.Connection.Closed') {
         this.retry()
       }
     }
 
-    retry () {
+    async stop () {
+      this.incomingWidth = 0
+      this.incomingHeight = 0
+      clearInterval(this.statsInterval)
       clearTimeout(this.retryTimer)
+      if (this.subscriber) {
+        try {
+          this.subscriber.off('*', this.onSubscriberEvent)
+          await this.subscriber.unsubscribe()
+          this.subscriber = undefined
+        } catch (e) {
+          console.error(e)
+        }
+      }
+    }
+
+    async retry () {
+      clearTimeout(this.retryTimer)
+
+      this.stop() 
       this.retryTimer = setTimeout(() => {
         clearTimeout(this.retryTimer)
         this.start()
@@ -84,16 +105,44 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     async start () {
       clearTimeout(this.retryTimer)
       try {
-        console.log(`[START] : ${this.config.streamName}`)
         this.subscriber = new red5prosdk.RTCSubscriber()
-        this.subscriber.on('*', event => this.onSubscriberEvent(event))
+        this.subscriber.on('*', this.onSubscriberEvent)
         await this.subscriber.init(this.config)
         await this.subscriber.subscribe()
-        console.log(`[END] : ${this.config.streamName}`)
+        this.setUpStatsCheck(this.subscriber.getPeerConnection())
       } catch (e) {
         console.error(e)
         this.retry()
       }
+    }
+
+    setIncomingResolution (width, height) {
+      console.log(`[Subscriber+${this.subscriberId}] :: ${width}x${height}`)
+      const element = document.querySelector(`#${getElementIdFromStreamName(this.streamName)}`)
+      if (element && this.incomingWidth !== width) {
+        element.style['max-width'] = `${width}px`
+      }
+      if (element && this.incomingHeight !== height) {
+        element.style['max-height'] = `${height}px`
+      }
+      this.incomingWidth = width
+      this.incomingHeight = height
+    }
+
+    setUpStatsCheck (connection) {
+      clearInterval(this.statsInterval)
+      this.statsInterval = setInterval(() => {
+        connection.getStats(null)
+          .then(response => {
+            response.forEach(report => {
+              if (report.type === 'track' &&
+                (report.kind === 'video' || (report.frameWidth || report.frameHeight))) {
+                this.setIncomingResolution(report.frameWidth, report.frameHeight)
+              }
+            })
+          })
+          .catch (e => console.error(e))
+      }, 1000)
     }
 
   }
