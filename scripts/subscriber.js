@@ -25,7 +25,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 ((window, red5prosdk) => {
 
-  const RETRY_DELAY = 3000
+  const getRandomBetween = (min, max) => Math.floor(Math.random() * (max - min) + min)
   const template = '<div class="video-holder">' +
     '<video autoplay controls playsinline class="red5pro-subscriber"></video>' +
   '</div>';
@@ -41,7 +41,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const div = document.createElement('div')
     div.innerHTML = template
     const videoElement = div.getElementsByClassName('red5pro-subscriber')[0]
-    videoElement.id = generateSubscriberId(name)
+    videoElement.id = getElementIdFromStreamName(name)
+    videoElement.muted = true
     return div
   }
 
@@ -57,9 +58,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       this.streamName = streamName
       this.subscriber = undefined
       this.retryTimer = 0
+      this.retryDelay = (30 + getRandomBetween(10, 60)) * 100
     }
 
     onSubscriberEvent (event) {
+      if (event.type === 'Subscribe.Time.Update') return
       console.log(`[Subscriber+${this.subscriberId}] :: ${event.type}`)
     }
 
@@ -68,7 +71,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       this.retryTimer = setTimeout(() => {
         clearTimeout(this.retryTimer)
         this.start()
-      }, RETRY_DELAY)
+      }, this.retryDelay)
     }
 
     init () {
@@ -78,10 +81,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     async start () {
       clearTimeout(this.retryTimer)
       try {
+        console.log(`[START] : ${this.config.streamName}`)
         this.subscriber = new red5prosdk.RTCSubscriber()
         this.subscriber.on('*', event => this.onSubscriberEvent(event))
         await this.subscriber.init(this.config)
         await this.subscriber.subscribe()
+        console.log(`[END] : ${this.config.streamName}`)
       } catch (e) {
         console.error(e)
         this.retry()

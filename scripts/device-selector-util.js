@@ -64,6 +64,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
     let indices = selectedResolutions.map(r => hd.indexOf(r)).sort().reverse()
     selectedResolutions = indices.map(i => hd[i])
+    console.log('SELECTED', selectedResolutions)
     if (provisionCallback) {
       provisionCallback(selectedResolutions)
     }
@@ -94,6 +95,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       transcodeSelect.type = 'checkbox'
       transcodeSelect.value = index
       transcodeSelect.classList.add('transcode-select')
+      transcodeSelect.classList.add('disable-on-start')
 
       tr.id = 'dimension-' + index
       tr.classList.add('settings-control')
@@ -133,7 +135,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
             width: { exact: dim.width },
             height: { exact: dim.height },
             //            frameRate: { exact: dim.frameRate },
-            deviceId: deviceId
+            deviceId: { exact: deviceId }
           }
         }
 

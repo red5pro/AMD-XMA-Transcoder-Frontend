@@ -4,6 +4,7 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.17e50649.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <script src="lib/adapter-latest.js"></script>
     <script src="https://unpkg.com/red5pro-webrtc-sdk@latest/red5pro-sdk.min.js"></script>
     <link rel="stylesheet" href="styles/main.css">
   </head>
@@ -23,18 +24,18 @@
           <div class="settings-area">
             <p class="settings-field">
               <label for="host-field" class="device-label">Host:</label>
-              <input id="host-field" name="room-field" class="settings-input">
+              <input id="host-field" name="room-field" class="settings-input disable-on-starting">
             </p>
           </div>
           <div id="publisher-settings" class="publisher-settings">
             <p class="settings-field">
               <label class="device-label" for="streamname-field">Stream Name:</label>
-              <input id="streamname-field" name="streamname-field" class="settings-input">
+              <input id="streamname-field" name="streamname-field" class="settings-input disable-on-starting">
             </p>
             <hr class="paddedHR" />
             <p>
               <label class="device-label" for="camera-select">Camera:</label>
-              <select class="control device-control settings-input" name="camera-select" id="camera-select"></select>
+              <select class="control device-control settings-input disable-on-starting" name="camera-select" id="camera-select"></select>
             </p>
             <div class="settings-collapsable" style="padding-bottom: 1rem">
               <p class="centered status-field">Supported Constraints</p>
@@ -51,7 +52,7 @@
                 <tbody id="res-container"></tbody>
               </table>
               <div>
-                <button id="post-button" class="ui-button">Start Broadcast</button>
+                <button id="post-button" class="ui-button disable-on-starting">Start Broadcast</button>
               </div>
             </div>
           </div>

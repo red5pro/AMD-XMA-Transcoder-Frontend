@@ -42,6 +42,7 @@ body {
 }
 
 .session_subscribe {
+  display: flex;
   flex-grow: 1;
   flex-wrap: wrap;
   height: 100%;

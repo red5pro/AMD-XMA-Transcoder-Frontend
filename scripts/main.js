@@ -45,6 +45,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const sessionSubscribeContainer = document.getElementById('session_subscribe-container')
 
   const STATE_SETUP = 'setup'
+  const STATE_STARTING = 'starting'
   const STATE_SESSION = 'session'
 
   const setState = state => {
@@ -52,7 +53,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       case STATE_SETUP:
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-setup')).forEach(el => el.classList.add('hidden'))
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-session')).forEach(el => el.classList.remove('hidden'))
+        Array.prototype.slice.call(document.querySelectorAll('.disable-on-starting')).forEach(el => el.disabled = false)
         postProvisionButton.addEventListener('click', handlePostProvision, true) 
+        break;
+      case STATE_STARTING:
+        Array.prototype.slice.call(document.querySelectorAll('.disable-on-starting')).forEach(el => el.disabled = true)
+        Array.prototype.slice.call(document.querySelectorAll('.remove-on-starting')).forEach(el => el.classList.remove('hidden'))
+        postProvisionButton.removeEventListener('click', handlePostProvision, true)
         break;
       case STATE_SESSION:
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-session')).forEach(el => el.classList.add('hidden'))
@@ -80,6 +87,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   const onPublisherEvent = event => {
     console.log('[Red5ProPublisher] ' + event.type + '.')
+    if (event.type === 'Publish.Available') {
+      setState(STATE_SESSION)
+    }
   }
 
   let transcoderPOST = {
@@ -97,9 +107,44 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       qos: 3
     }
   }
+
+  const reassignMedia = constraint => {
+    console.log('CONSTRAINT', constraint)
+    const {
+      video: {
+        deviceId
+      }
+    } = mediaStreamConstraints 
+    const id = deviceId.hasOwnProperty('exact') ? deviceId.exact : deviceId
+    const constraints = {
+      audio: true,
+      video: {
+        deviceId: { exact: id },
+        width: { exact: constraint.width },
+        height: { exact: constraint.height },
+//        frameRate: { exact: framerate }
+      }
+    }
+    const element = document.querySelector('#red5pro-publisher')
+    if (mediaStream) {
+      mediaStream.getTracks().forEach((track) => {
+        track.stop()
+      })
+    }
+
+    let t = setTimeout(() => {
+      navigator.mediaDevices.getUserMedia(constraints)
+        .then(media => {
+          mediaStream = media
+          element.srcObject = mediaStream
+        })
+    }, 200)
+  }
+
   let selectedProvisions = []
   const handleProvisionChange = list => {
     selectedProvisions = list
+    reassignMedia(selectedProvisions[0])
   }
 
   const bitrateFromResolution = (width, height) => {
@@ -144,6 +189,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       showErrorAlert('Please select the High-Level Variant for provisioning the transcoder.')
       return
     }
+    setState(STATE_STARTING)
     const host = hostField.value
     const name = streamNameField.value
     let framerate = 15
@@ -169,15 +215,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       console.log('POST', transcoderPOST)
       const payload = await window.provisionUtil.postTranscode(host, `live`, `${name}`, transcoderPOST)
       console.log('PAYLOAD', payload)
-      startBroadcastWithLevel(highestLevel, name, framerate)
-      startSubscribers(subscriberStreamNames)
+      await startBroadcastWithLevel(highestLevel, name, framerate)
+      //      startSubscribers(subscriberStreamNames)
     } catch (e) {
       console.error(e)
       if (/Provision already exists/.exec(e.message)) {
         removeStoredProvisionAndRepost(name)
+        return
       } else {
         showErrorAlert(e.message)
       }
+      setState(STATE_SETUP)
     }
   }
 
@@ -190,13 +238,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         videoBR
       }
     } = level
-    const deviceId = mediaStreamConstraints.video.deviceId
+    const {
+      video: {
+        deviceId
+      }
+    }  = mediaStreamConstraints
+    const id = deviceId.hasOwnProperty('exact') ? deviceId.exact : deviceId
     const constraints = {
       audio: true,
       video: {
-        deviceId: deviceId,
-        width: videoWidth,
-        height: videoHeight,
+        deviceId: { exact: id },
+        width: { exact: videoWidth },
+        height: { exact: videoHeight },
         //        frameRate: { exact: framerate }
       }
     }
@@ -204,17 +257,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     let stream
     const bitrate = videoBR / 1000
     try {
-      console.log('CONSTRAINTS', constraints)
-      stream = await navigator.mediaDevices.getUserMedia(constraints)
+      //     console.log('CONSTRAINTS', constraints)
+      //      stream = await navigator.mediaDevices.getUserMedia(constraints)
+      //      mediaStream = stream
+      //      element.srcObject = mediaStream
+      await doPublish(mediaStream, name, bitrate)
+      return true
     } catch (e) {
       console.error(e)
       showErrorAlert(e.message.length === 0 ? e.name : e.message)
       setState(STATE_SETUP)
       return
     }
-    mediaStream = stream
-    element.srcObject = mediaStream
-    doPublish(mediaStream, name, bitrate)
   }
 
   const doPublish = async (stream, name, bitrate = 256) => {
@@ -236,7 +290,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       await publisher.initWithStream(config, stream)
       publisher.on('*', onPublisherEvent)
       await publisher.publish(streamNameToUse)
-      setState(STATE_SESSION)
+      // Moved to Publish.Available event.
+      //      setState(STATE_SESSION)
+      return publisher
     } catch (e) {
       console.error(e)
       showErrorAlert(e.message)
