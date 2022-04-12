@@ -31,6 +31,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   let mediaStreamConstraints
   let subscriberStreamNames = []
 
+  let provisionCount = 4
   let host = window.location.hostname
   let streamName = 'stream'
   let appContext = 'live'
@@ -250,7 +251,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const highestLevel = streams.find(e => e.level === 1)
     const highestLevelIndex = streams.findIndex(e => e.level === 1)
     framerate = selectedProvisions[highestLevelIndex].frameRate
-    streams = padVariants(name, streams, highestLevel, 4)
+    streams = padVariants(name, streams, highestLevel, provisionCount)
     streams = streams.map(entry => {
       const { parameters } = provisionVariant
       const { properties } = entry
@@ -361,10 +362,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       app: 'live'
     }
     console.log('start subscribers', streamNames)
-    streamNames.forEach(name => {
+    const length = provisionCount * 3
+    streamNames.forEach((name, index) => {
       try {
+        const scale = (length-(index)) * ((100 / length) / 100)
         const sub = new SubscriberBlock(baseConfig, name)
-        sessionSubscribeContainer.appendChild(sub.init())
+        sessionSubscribeContainer.appendChild(sub.init(scale))
         sub.start()
       } catch (e) {
         console.error(e)

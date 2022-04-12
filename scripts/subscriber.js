@@ -28,6 +28,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const getRandomBetween = (min, max) => Math.floor(Math.random() * (max - min) + min)
   const template = '<div class="video-holder">' +
     '<video autoplay controls playsinline class="red5pro-subscriber"></video>' +
+    '<p class="resolution-field">0x0</p>' +
   '</div>';
   const getElementIdFromStreamName = name => {
     return `${name}_subscriber`
@@ -37,18 +38,19 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return `${name}_${uid}`
   }
 
-  const generateSubscriberElement = name => {
+  const generateSubscriberElement = (name, scale) => {
     const div = document.createElement('div')
     div.innerHTML = template
     const videoElement = div.getElementsByClassName('red5pro-subscriber')[0]
     videoElement.id = getElementIdFromStreamName(name)
     videoElement.muted = true
+    videoElement.style.width = `calc(((100vw * 0.66) * 0.5) * ${scale})`
     return div
   }
 
   class SubscriberBlock {
 
-    constructor (baseConfiguration, streamName) {
+    constructor (baseConfiguration, streamName, scale) {
       this.subscriberId = generateSubscriberId(streamName)
       this.config = {...baseConfiguration, ...{
         streamName: streamName,
@@ -62,6 +64,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       this.statsInterval = 0
       this.incomingWidth = 0
       this.incomingHeight = 0
+      this.subscriberEventHandler = this.onSubscriberEvent.bind(this)
     }
 
     onSubscriberEvent (event) {
@@ -79,7 +82,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       clearTimeout(this.retryTimer)
       if (this.subscriber) {
         try {
-          this.subscriber.off('*', this.onSubscriberEvent)
+          this.subscriber.off('*', this.subscriberEventHandler)
           await this.subscriber.unsubscribe()
           this.subscriber = undefined
         } catch (e) {
@@ -98,15 +101,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }, this.retryDelay)
     }
 
-    init () {
-      return generateSubscriberElement(this.streamName)
+    init (scale) {
+      return generateSubscriberElement(this.streamName, scale)
     }
 
     async start () {
       clearTimeout(this.retryTimer)
       try {
         this.subscriber = new red5prosdk.RTCSubscriber()
-        this.subscriber.on('*', this.onSubscriberEvent)
+        this.subscriber.on('*', this.subscriberEventHandler)
         await this.subscriber.init(this.config)
         await this.subscriber.subscribe()
         this.setUpStatsCheck(this.subscriber.getPeerConnection())
@@ -117,16 +120,18 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     setIncomingResolution (width, height) {
-      console.log(`[Subscriber+${this.subscriberId}] :: ${width}x${height}`)
+      //      console.log(`[Subscriber+${this.subscriberId}] :: ${width}x${height}`)
       const element = document.querySelector(`#${getElementIdFromStreamName(this.streamName)}`)
+      const resolutionField = element.parentNode.querySelector('.resolution-field')
       if (element && this.incomingWidth !== width) {
         element.style['max-width'] = `${width}px`
       }
       if (element && this.incomingHeight !== height) {
         element.style['max-height'] = `${height}px`
       }
-      this.incomingWidth = width
-      this.incomingHeight = height
+      this.incomingWidth = width || 0
+      this.incomingHeight = height || 0
+      resolutionField.innerText = `${this.incomingWidth}x${this.incomingHeight}`
     }
 
     setUpStatsCheck (connection) {

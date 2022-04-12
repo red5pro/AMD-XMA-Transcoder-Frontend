@@ -126,15 +126,28 @@ body {
   background-color: black;
 }
 
+.video-holder {
+  position: relative;
+  width: calc((100vw * 0.66) * 0.5);
+}
+
 .red5pro-subscriber {
   width: calc((100vw * 0.66) * 0.5);
   background-color: black;
   object-fit: contain;
+  margin: 0 auto;
+  display: block;
 }
 
 .red5pro-publisher {
   max-height: unset;
   width: calc(100vw * 0.33);
+}
+
+.resolution-field {
+  color: white;
+  position: absolute;
+  right: 10px;
 }
 
 .alert {
