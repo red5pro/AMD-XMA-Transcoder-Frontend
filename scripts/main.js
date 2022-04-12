@@ -33,6 +33,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   let host = window.location.hostname
   let streamName = 'stream'
+  let appContext = 'live'
   let ipReg = /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/
   let localhostReg = /^localhost.*/
   const isIPOrLocalhost = host => ipReg.exec(host) || localhostReg.exec(host)
@@ -95,6 +96,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
   }
 
+  // Stream Manager API POST
+  /*
   let transcoderPOST = {
     meta: {
       authentication: {
@@ -109,6 +112,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       },
       qos: 3
     }
+  }
+  */
+
+  const provisionVariant = {
+    guid: 'live/stream1',
+    context: 'live',
+    name: 'stream1_1',
+    level: 1,
+    isRestricted: false,
+    restrictions: [],
+    parameters: {
+      videoWidth: 1920,
+      videoHeight: 1080,
+      videoFPS: 30, 
+      hardware: 'xili',
+      videoBR: 2000000
+    },
+    primaries: [],
+    secondaries: []
   }
 
   const reassignMedia = constraint => {
@@ -159,8 +181,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return 256
   }
 
+  const fpsFromResolution = (width, height) => {
+    if (height >= 720) return 30
+    return 15
+  }
+
   const padVariants = (streamName, list, highestVariant, length) => {
-    const { properties: { videoWidth, videoHeight } } = highestVariant
+    const { properties: { videoWidth, videoHeight, videoFPS } } = highestVariant
     while (list.length < length) {
       const nextIndex = list.length + 1
       const multiplier = (length-(nextIndex-1)) * ((100 / length) / 100)
@@ -172,16 +199,25 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         properties: {
           videoBR: bitrateFromResolution(width, height) * 1000,
           videoWidth: width,
-          videoHeight: height
+          videoHeight: height,
+          videoFPS: fpsFromResolution(width, height)
         }
       }})
     }
     return list
   }
 
-  const removeStoredProvisionAndRepost = async (name) => {
+  const getApiBaseUrl = () => {
+    const hostValue = hostField.value
+    const protocol = isIPOrLocalhost(hostValue) ? 'http' : 'https'
+    const port = isIPOrLocalhost(hostValue) ? 5080 : 443
+    return `${protocol}://${hostValue}:${port}`
+  }
+
+  const removeStoredProvisionAndRepost = async (guid, context, name) => {
     try {
-      await window.provisionUtil.deleteTranscode(host, `live`, `${name}`)
+      const baseUrl = getApiBaseUrl()
+      await window.provisionUtil.deleteTranscode(baseUrl, { guid, context, name })
       handlePostProvision()
     } catch (e) {
       console.error(e)
@@ -196,6 +232,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     setState(STATE_STARTING)
     const host = hostField.value
     const name = streamNameField.value
+    const guid = `${appContext}/${name}`
     let framerate = 15
     // Only top level in list.
     let streams = selectedProvisions.map((res, index) => {
@@ -205,7 +242,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         properties: {
           videoBR: res.bandwidth * 1000,
           videoWidth: res.width,
-          videoHeight: res.height
+          videoHeight: res.height,
+          videoFPS: res.frameRate
         }
       }
     })
@@ -213,19 +251,30 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     const highestLevelIndex = streams.findIndex(e => e.level === 1)
     framerate = selectedProvisions[highestLevelIndex].frameRate
     streams = padVariants(name, streams, highestLevel, 4)
-    transcoderPOST.meta.stream = streams.reverse()
-    subscriberStreamNames = streams.map(v => v.name).reverse()
+    streams = streams.map(entry => {
+      const { parameters } = provisionVariant
+      const { properties } = entry
+      return {...provisionVariant, ...{
+        guid,
+        context: appContext,
+        name: entry.name,
+        level: entry.level,
+        parameters: {...parameters, ...properties }
+      }}
+    })
+    const transcoderPOST = {provisions: streams}
+    subscriberStreamNames = streams.map(v => v.name)
     window.scrollTo(0, 0)    
     try {
-      console.log('POST', transcoderPOST)
-      const payload = await window.provisionUtil.postTranscode(host, `live`, `${name}`, transcoderPOST)
-      console.log('PAYLOAD', payload)
+      const baseUrl = getApiBaseUrl()
+      console.log('POST', baseUrl, transcoderPOST)
+      const payload = await window.provisionUtil.postTranscode(baseUrl, transcoderPOST)
       await startBroadcastWithLevel(highestLevel, name, framerate)
       startSubscribers(subscriberStreamNames)
     } catch (e) {
       console.error(e)
       if (/Provision already exists/.exec(e.message)) {
-        removeStoredProvisionAndRepost(name)
+        removeStoredProvisionAndRepost(guid, appContext, name)
         return
       } else {
         showErrorAlert(e.message)
@@ -265,7 +314,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       bandwidth: {
         video: bitrate
       },
-      app: 'live',
+      app: appContext,
       streamName: streamNameToUse
     }
 

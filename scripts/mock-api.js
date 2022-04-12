@@ -1,3 +1,0 @@
-window.provisionUtil = {
-  postTranscode: () => true
-}
