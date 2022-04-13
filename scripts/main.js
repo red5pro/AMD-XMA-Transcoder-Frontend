@@ -46,6 +46,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const mainPublishContainer = document.getElementById('main_publisher-container')
   const sessionPublishContainer = document.getElementById('session_publisher-container')
   const sessionSubscribeContainer = document.getElementById('session_subscribe-container')
+  const contentSelect = document.getElementById('content-select')
+  const prioritySelect = document.getElementById('priority-select')
+  const networkSelect = document.getElementById('network-select')
 
   const STATE_SETUP = 'setup'
   const STATE_STARTING = 'starting'
@@ -88,10 +91,26 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     window.scrollTo(0, 0)
   }
 
-  const onPublisherEvent = event => {
+  const onPublisherEvent = async(event) => {
     console.log('[Red5ProPublisher] ' + event.type + '.')
     publisherStatusField.classList.remove('hidden')
     publisherStatusField.innerText = event.type
+    if (event.type === 'WebRTC.Offer.Start') {
+      try {
+        const sender = event.publisher.getPeerConnection().getSenders().find(s => s.track.kind === 'video')
+        let params = await sender.getParameters()
+        params.degradationPreference = 'maintain-resolution'
+        params.encodings = [
+          {...params.encodings[0], ...{
+            priority: prioritySelect.value,
+            networkPriority: networkSelect.value
+          }}
+        ]
+        await sender.setParameters(params)
+      } catch (e) {
+        console.error(e)
+      }
+    }
     if (event.type === 'Publish.Available') {
       setState(STATE_SESSION)
     }
@@ -163,6 +182,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         .then(media => {
           mediaStream = media
           element.srcObject = mediaStream
+          window.r5pro_stream = mediaStream
         })
     }, 200)
   }
@@ -320,10 +340,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     try {
+      const track = stream.getVideoTracks()[0]
+      track.contentHint = contentSelect.value || ''
       let publisher = new red5prosdk.RTCPublisher()
       await publisher.initWithStream(config, stream)
       publisher.on('*', onPublisherEvent)
       await publisher.publish(streamNameToUse)
+      window.connection = publisher.getPeerConnection()
+      console.log('SETTINGS TRACK', track)
+      console.log('SETTINGS PARAMS',publisher.getPeerConnection().getSenders().find(s => s.track.kind === 'video').getParameters())
       // Moved to Publish.Available event.
       //      setState(STATE_SESSION)
       return publisher
