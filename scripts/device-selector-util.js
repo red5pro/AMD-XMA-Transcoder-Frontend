@@ -107,7 +107,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       tr.classList.add('table-row')
       if (!enabled) {
         tr.classList.add('table-row-disabled')
-        transcodeSelect.disabled = true
+        //        transcodeSelect.disabled = true
       }
       resTD.appendChild(resText)
       frTD.appendChild(ftText)
@@ -119,7 +119,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         td.classList.add('table-entry')
       })
 
-      if (enabled) {
+      if (enabled || !enabled) {
         transcodeSelect.addEventListener('click', onTranscodeSelect, true)
       }
       return tr
