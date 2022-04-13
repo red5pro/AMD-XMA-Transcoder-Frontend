@@ -102,6 +102,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         params.degradationPreference = 'maintain-resolution'
         params.encodings = [
           {...params.encodings[0], ...{
+            maxBitrate: 4000 * 1000,
             priority: prioritySelect.value,
             networkPriority: networkSelect.value
           }}
