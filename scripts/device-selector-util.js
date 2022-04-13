@@ -43,8 +43,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     {width: 640, height: 480, frameRate: 15, bandwidth: 512, media: undefined},
     {width: 720, height: 480, frameRate: 15, bandwidth: 750, media: undefined},
     {width: 960, height: 540, frameRate: 15, bandwidth: 750, media: undefined},
-    {width: 1280, height: 720, frameRate: 30, bandwidth: 1500, media: undefined},
-    {width: 1920, height: 1080, frameRate: 30, bandwidth: 3000, media: undefined},
+    {width: 1280, height: 720, frameRate: 30, bandwidth: 4000, media: undefined},
+    {width: 1920, height: 1080, frameRate: 30, bandwidth: 4000, media: undefined},
     {width: 3840, height: 2160, frameRate: 30, bandwidth: 4500, media: undefined}
   ];
 
