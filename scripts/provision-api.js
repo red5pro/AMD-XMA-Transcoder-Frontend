@@ -26,7 +26,7 @@ window.provisionUtil = {
     const post = JSON.stringify(provision)
     try {
       const result = await fetch(url, {
-        method: 'DELETE',
+        method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
