@@ -123,15 +123,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       //      console.log(`[Subscriber+${this.subscriberId}] :: ${width}x${height}`)
       const element = document.querySelector(`#${getElementIdFromStreamName(this.streamName)}`)
       const resolutionField = element.parentNode.querySelector('.resolution-field')
-      if (element && this.incomingWidth !== width) {
-        element.style['max-width'] = `${width}px`
+      const vidWidth = width || element.videoWidth
+      const vidHeight = height || element.videoHeight
+      if (element && this.incomingWidth !== vidWidth) {
+        element.style['max-width'] = `${vidWidth}px`
       }
-      if (element && this.incomingHeight !== height) {
-        element.style['max-height'] = `${height}px`
+      if (element && this.incomingHeight !== vidHeight) {
+        element.style['max-height'] = `${vidHeight}px`
       }
-      this.incomingWidth = width || 0
-      this.incomingHeight = height || 0
-      resolutionField.innerText = `${this.incomingWidth}x${this.incomingHeight}`
+      this.incomingWidth = vidWidth || 0
+      this.incomingHeight = vidHeight || 0
+      resolutionField.innerText = `Transcoded Resolution:  ${this.incomingWidth}x${this.incomingHeight}`
     }
 
     setUpStatsCheck (connection) {
@@ -140,7 +142,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         connection.getStats(null)
           .then(response => {
             response.forEach(report => {
-              if (report.type === 'track' &&
+              if ((report.type === 'track' || report.type === 'inbound-rtp') &&
                 (report.kind === 'video' || (report.frameWidth || report.frameHeight))) {
                 this.setIncomingResolution(report.frameWidth, report.frameHeight)
               }

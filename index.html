@@ -4,8 +4,8 @@
     <meta charset="UTF-8" />
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.17e50649.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <script src="lib/adapter-latest.js"></script>
-    <script src="lib/red5pro-sdk.min.js"></script>
+    <script src="lib/adapter/adapter-latest.js"></script>
+    <script src="lib/red5pro/red5pro-sdk.min.js"></script>
     <link rel="stylesheet" href="styles/main.css">
   </head>
   <body>
@@ -42,6 +42,28 @@
               <label class="device-label" for="camera-select">Camera:</label>
               <select class="control device-control settings-input disable-on-starting" name="camera-select" id="camera-select"></select>
             </p>
+            <p class="settings-field">
+              <label class="device-label" for="content-select">Content Type:</label>
+              <select class="control device-control settings-input disable-on-starting" name="content-select" id="content-select">
+                <option value="">Default</option>
+                <option value="motion">Motion</option>
+                <option value="detail">Detail</option>
+              </select>
+            </p>
+            <p class="settings-field">
+              <label class="device-label" for="priority-select">Priority Encoding:</label>
+              <select class="control device-control settings-input disable-on-starting" name="content-select" id="priority-select">
+                <option value="low" selected="selected">Low</option>
+                <option value="high">High</option>
+              </select>
+            </p>
+            <p class="settings-field">
+              <label class="device-label" for="network-select">Network Priority Encoding:</label>
+              <select class="control device-control settings-input disable-on-starting" name="network-select" id="network-select">
+                <option value="low" selected="selected">Low</option>
+                <option value="high">High</option>
+              </select>
+            </p>
           </div>
         </div>
         <div>
@@ -67,7 +89,9 @@
         </div>
       </div>
       <div class="session remove-on-setup">
-        <div id="session_publisher-container" class="session_publisher"></div>
+        <div id="session_publisher-container" class="session_publisher">
+          <p>SOURCE</p>
+        </div>
         <div id="session_subscribe-container" class="session_subscribe"></div>
       </div>
     </div>
