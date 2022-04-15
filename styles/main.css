@@ -112,6 +112,10 @@ body {
   height: calc(100vh - 74px);
 }
 
+.session_publisher {
+  text-align: center;
+}
+
 .session_broadcast {
   width: calc(100vw * 0.33);
 }
