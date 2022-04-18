@@ -23,7 +23,7 @@ NONINFRINGEMENT.   IN  NO  EVENT  SHALL INFRARED5, INC. BE LIABLE FOR ANY CLAIM,
 WHETHER IN  AN  ACTION  OF  CONTRACT,  TORT  OR  OTHERWISE,  ARISING  FROM,  OUT  OF  OR  IN CONNECTION 
 WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
-((window, navigator, red5prosdk, SubscriberBlock) => { // eslint-disable-line no-unused-vars
+((window, navigator, red5prosdk, SubscriberBlock, screencapture) => { // eslint-disable-line no-unused-vars
 
   red5prosdk.setLogLevel(red5prosdk.LOG_LEVELS.TRACE)
 
@@ -49,6 +49,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const contentSelect = document.getElementById('content-select')
   const prioritySelect = document.getElementById('priority-select')
   const networkSelect = document.getElementById('network-select')
+  const screenCaptureButton = document.getElementById('screencap-button')
 
   const STATE_SETUP = 'setup'
   const STATE_STARTING = 'starting'
@@ -401,6 +402,8 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     })
   }
 
+  screenCaptureButton.addEventListener('click', screencapture)
+
   window.registerProvisionCallback(handleProvisionChange)
   setState(STATE_SETUP)
   startPreview()
@@ -408,4 +411,4 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   hostField.value = host
   streamNameField.value = streamName
 
-})(window, navigator, window.red5prosdk, window.SubscriberBlock)
+})(window, navigator, window.red5prosdk, window.SubscriberBlock, window.screencapture)

@@ -5,6 +5,7 @@
     <link rel="icon" type="image/svg+xml" href="/assets/favicon.17e50649.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <script src="lib/adapter/adapter-latest.js"></script>
+    <script src="lib/html2canvas/html2canvas.min.js"></script>
     <script src="lib/red5pro/red5pro-sdk.min.js"></script>
     <link rel="stylesheet" href="styles/main.css">
   </head>
@@ -16,6 +17,7 @@
       </div>
       <div class="logo-bar">
         <img src="assets/Red5Pro_logo.svg" height="100%" alt="Red5 Pro">
+        <button id="screencap-button" class="screen-cap remove-on-setup">screenshot</button>
       </div>
       <div class="main remove-on-session">
         <div>
@@ -97,6 +99,7 @@
     </div>
     <script src="scripts/provision-api.js"></script>
     <script src="scripts/device-selector-util.js"></script>
+    <script src="scripts/screen-capture.js"></script>
     <script src="scripts/subscriber.js"></script>
     <script src="scripts/main.js"></script>
   </body>

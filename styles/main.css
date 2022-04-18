@@ -48,6 +48,20 @@ body {
   height: 54px;
   text-align: center;
   padding: 10px;
+  position: relative;
+}
+
+.screen-cap {
+  position: absolute;
+  top: 20px;
+  right: 10px;
+  color: #ddd;
+  background: none;
+  border: none;
+  font-weight: 200;
+  letter-spacing: 0.5px;
+  text-decoration: underline;
+  cursor: pointer;
 }
 
 .status-field {
@@ -177,6 +191,7 @@ body {
   color: white;
   position: absolute;
   right: 10px;
+  text-align: right;
 }
 
 .alert {
