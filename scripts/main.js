@@ -42,7 +42,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const hostField = document.getElementById('host-field')
   const streamNameField = document.getElementById('streamname-field')
   const publisherStatusField = document.getElementById('publisher-status-field')
-  const postProvisionButton = document.getElementById('post-button')
+  const submitHighProvisionButton = document.getElementById('submit-button')
   const mainPublishContainer = document.getElementById('main_publisher-container')
   const sessionPublishContainer = document.getElementById('session_publisher-container')
   const sessionSubscribeContainer = document.getElementById('session_subscribe-container')
@@ -50,6 +50,15 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const prioritySelect = document.getElementById('priority-select')
   const networkSelect = document.getElementById('network-select')
   const screenCaptureButton = document.getElementById('screencap-button')
+
+  const hdList = [
+    {width: 480, height: 272, frameRate: 15, bandwidth: 256, media: undefined},
+    {width: 640, height: 360, frameRate: 15, bandwidth: 512, media: undefined},
+    {width: 960, height: 540, frameRate: 15, bandwidth: 750, media: undefined},
+    {width: 1280, height: 720, frameRate: 30, bandwidth: 4000, media: undefined},
+    {width: 1920, height: 1080, frameRate: 30, bandwidth: 4000, media: undefined},
+    {width: 3840, height: 2160, frameRate: 30, bandwidth: 4500, media: undefined}
+  ].reverse()
 
   const STATE_SETUP = 'setup'
   const STATE_STARTING = 'starting'
@@ -61,17 +70,17 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-setup')).forEach(el => el.classList.add('hidden'))
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-session')).forEach(el => el.classList.remove('hidden'))
         Array.prototype.slice.call(document.querySelectorAll('.disable-on-starting')).forEach(el => el.disabled = false)
-        postProvisionButton.addEventListener('click', handlePostProvision, true) 
+        submitHighProvisionButton.addEventListener('click', handleSubmitHighProvision, true) 
         break;
       case STATE_STARTING:
         Array.prototype.slice.call(document.querySelectorAll('.disable-on-starting')).forEach(el => el.disabled = true)
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-starting')).forEach(el => el.classList.remove('hidden'))
-        postProvisionButton.removeEventListener('click', handlePostProvision, true)
+        submitHighProvisionButton.removeEventListener('click', handleSubmitHighProvision, true)
         break;
       case STATE_SESSION:
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-session')).forEach(el => el.classList.add('hidden'))
         Array.prototype.slice.call(document.querySelectorAll('.remove-on-setup')).forEach(el => el.classList.remove('hidden'))
-        postProvisionButton.removeEventListener('click', handlePostProvision, true)
+        submitHighProvisionButton.removeEventListener('click', handleSubmitHighProvision, true)
         const pubView = document.querySelector('#red5pro-publisher')
         pubView.parentNode.removeChild(pubView)
         sessionPublishContainer.appendChild(pubView)
@@ -81,7 +90,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 
   const showErrorAlert = message => {
-    const al = document.querySelector('.alert')
+    const al = document.querySelector('#message-dialog')
     const msg = al.querySelector('.alert-message')
     const submit = al.querySelector('#alert-submit')
     msg.innerText = message
@@ -89,7 +98,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     submit.addEventListener('click', () => {
       al.classList.add('hidden')
     })
-    window.scrollTo(0, 0)
   }
 
   const onPublisherEvent = async(event) => {
@@ -117,25 +125,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       setState(STATE_SESSION)
     }
   }
-
-  // Stream Manager API POST
-  /*
-  let transcoderPOST = {
-    meta: {
-      authentication: {
-        username: '',
-        password: '',
-        token: undefined
-      },
-      stream: [],
-      georules: {
-        regions: ['US', 'UK'],
-        restricted: false
-      },
-      qos: 3
-    }
-  }
-  */
 
   const provisionVariant = {
     guid: 'live/stream1',
@@ -209,6 +198,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return 15
   }
 
+  // Simple scaling down from highest variant.
   const padVariants = (streamName, list, highestVariant, length) => {
     const { properties: { videoWidth, videoHeight, videoFPS } } = highestVariant
     while (list.length < length) {
@@ -230,6 +220,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return list
   }
 
+  const handleSubmitHighProvision = () => {
+    if (selectedProvisions.length < 1) {
+      showErrorAlert('Please select the High-Level Variant for provisioning the transcoder.')
+      return
+    }
+    window.showVariantsSelectDialog(selectedProvisions, hdList, handlePostProvision)
+  }
+
   const getApiBaseUrl = () => {
     const hostValue = hostField.value
     const protocol = isIPOrLocalhost(hostValue) ? 'http' : 'https'
@@ -237,28 +235,24 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     return `${protocol}://${hostValue}:${port}`
   }
 
-  const removeStoredProvisionAndRepost = async (guid, context, name) => {
+  const removeStoredProvisionAndRepost = async (guid, context, name, provisions) => {
     try {
       const baseUrl = getApiBaseUrl()
       await window.provisionUtil.deleteTranscode(baseUrl, { guid, context, name })
-      handlePostProvision()
+      handlePostProvision(provisions)
     } catch (e) {
       console.error(e)
     }
   }
 
-  const handlePostProvision = async () => {
-    if (selectedProvisions.length < 1) {
-      showErrorAlert('Please select the High-Level Variant for provisioning the transcoder.')
-      return
-    }
+  const handlePostProvision = async (provisions) => {
     setState(STATE_STARTING)
     const host = hostField.value
     const name = streamNameField.value
     const guid = `${appContext}/${name}`
     let framerate = 15
     // Only top level in list.
-    let streams = selectedProvisions.map((res, index) => {
+    let streams = provisions.map((res, index) => {
       return {
         level: index+1,
         name: `${name}_${index+1}`,
@@ -272,8 +266,9 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     })
     const highestLevel = streams.find(e => e.level === 1)
     const highestLevelIndex = streams.findIndex(e => e.level === 1)
-    framerate = selectedProvisions[highestLevelIndex].frameRate
-    streams = padVariants(name, streams, highestLevel, provisionCount)
+    framerate = provisions[highestLevelIndex].frameRate
+    // Favored variant dialog over padding scaled resolutions.
+    // streams = padVariants(name, streams, highestLevel, provisionCount)
     streams = streams.map(entry => {
       const { parameters } = provisionVariant
       const { properties } = entry
@@ -297,7 +292,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     } catch (e) {
       console.error(e)
       if (/Provision already exists/.exec(e.message)) {
-        removeStoredProvisionAndRepost(guid, appContext, name)
+        removeStoredProvisionAndRepost(guid, appContext, name, provisions)
         return
       } else {
         showErrorAlert(e.message)
@@ -370,7 +365,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       mediaStream = await navigator.mediaDevices.getUserMedia(constraints)
       mediaStreamConstraints = constraints
       element.srcObject = mediaStream
-      window.allowMediaStreamSwap(element, constraints, mediaStream, (activeStream, activeConstraints) => {
+      window.allowMediaStreamSwap(element, constraints, mediaStream, hdList, (activeStream, activeConstraints) => {
         mediaStream = activeStream
         mediaStreamConstraints = activeConstraints
         console.log(mediaStream, mediaStreamConstraints)

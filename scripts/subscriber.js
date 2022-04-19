@@ -64,6 +64,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       this.statsInterval = 0
       this.incomingWidth = 0
       this.incomingHeight = 0
+      this.scale = 0
       this.subscriberEventHandler = this.onSubscriberEvent.bind(this)
     }
 
@@ -102,6 +103,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     }
 
     init (scale) {
+      this.scale = scale
       return generateSubscriberElement(this.streamName, scale)
     }
 
@@ -133,7 +135,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
       this.incomingWidth = vidWidth || 0
       this.incomingHeight = vidHeight || 0
-      resolutionField.innerText = `Transcoded Resolution:  ${this.incomingWidth}x${this.incomingHeight}`
+      resolutionField.innerText = `${this.scale === 1 ? 'Original' : 'Transcoded Resolution'}:  ${this.incomingWidth}x${this.incomingHeight}`
     }
 
     setUpStatsCheck (connection) {

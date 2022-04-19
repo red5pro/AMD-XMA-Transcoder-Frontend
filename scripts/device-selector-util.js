@@ -27,26 +27,14 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   var isTranscode = true
 
+  // List of default HD resolutions. Used in determining browser support for Camera.
+  let hd = []
   let callback
   let provisionCallback
   let mediaConstraints
   const cameraSelect = document.getElementById('camera-select')
   const resContainer = document.getElementById('res-container')
   let selectedResolutions = []
-
-  // List of default HD resolutions. Used in determining browser support for Camera.
-  const hd = [
-    {width: 256, height: 144, frameRate: 15, bandwidth: 256, media: undefined},
-    {width: 320, height: 240, frameRate: 15, bandwidth: 256, media: undefined},
-    {width: 512, height: 288, frameRate: 15, bandwidth: 256, media: undefined},
-    {width: 640, height: 360, frameRate: 15, bandwidth: 512, media: undefined},
-    {width: 640, height: 480, frameRate: 15, bandwidth: 512, media: undefined},
-    {width: 720, height: 480, frameRate: 15, bandwidth: 750, media: undefined},
-    {width: 960, height: 540, frameRate: 15, bandwidth: 750, media: undefined},
-    {width: 1280, height: 720, frameRate: 30, bandwidth: 4000, media: undefined},
-    {width: 1920, height: 1080, frameRate: 30, bandwidth: 4000, media: undefined},
-    {width: 3840, height: 2160, frameRate: 30, bandwidth: 4500, media: undefined}
-  ];
 
   const onTranscodeSelect = el => {
     const id = parseInt(el.currentTarget.value, 10)
@@ -247,9 +235,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   }
 
   let hasBegunMonitor = false
-  window.allowMediaStreamSwap = (viewElement, constraints, mediaStream, callback) => {
+  window.allowMediaStreamSwap = (viewElement, constraints, mediaStream, hdList, callback) => {
     if (hasBegunMonitor) return
     hasBegunMonitor = true
+    hd = hdList
     callback = callback
     mediaConstraints = constraints
     beginMediaMonitor(mediaStream, callback, mediaConstraints, viewElement)

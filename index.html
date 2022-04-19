@@ -11,10 +11,6 @@
   </head>
   <body>
     <div id="app" class="app">
-      <div class="alert hidden">
-        <p class="alert-message"></p>
-        <p><button id="alert-submit">OK</button></p>
-      </div>
       <div class="logo-bar">
         <img src="assets/Red5Pro_logo.svg" height="100%" alt="Red5 Pro">
         <button id="screencap-button" class="screen-cap remove-on-setup">screenshot</button>
@@ -85,8 +81,37 @@
               <tbody id="res-container"></tbody>
             </table>
             <div class="post-controls">
-              <button id="post-button" class="ui-button disable-on-starting">Start Broadcast</button>
+              <button id="submit-button" class="ui-button disable-on-starting">Submit as High-Level Variant</button>
             </div>
+          </div>
+        </div>
+        <div id="variant-dialog" class="dialog hidden">
+          <div class="alert">
+            <p class="variant-dialog_title">Select or Enter 3 Variants</p>
+            <table class="table">
+              <thead>
+                <tr>
+                  <td class="table-entry">Resolution</td>
+                  <td class="table-entry">Framerate</td>
+                  <td class="table-entry">Bitrate (Kbps)</td>
+                  <td class="table-entry">Select</td>
+                </tr>
+              </thead>
+              <tbody id="variant-container"></tbody>
+            </table>
+            <p>
+              <button id="add-variant-button">Add Custom Variant</button>
+            </p>
+            <p>
+              <button id="cancel-button">Cancel</button>
+              <button id="post-button">Post Provisions</button>
+            </p>
+          </div>
+        </div>
+        <div id="message-dialog" class="dialog hidden">
+          <div class="alert">
+            <p class="alert-message"></p>
+            <p><button id="alert-submit">OK</button></p>
           </div>
         </div>
       </div>
@@ -99,6 +124,7 @@
     </div>
     <script src="scripts/provision-api.js"></script>
     <script src="scripts/device-selector-util.js"></script>
+    <script src="scripts/variants-dialog.js"></script>
     <script src="scripts/screen-capture.js"></script>
     <script src="scripts/subscriber.js"></script>
     <script src="scripts/main.js"></script>
