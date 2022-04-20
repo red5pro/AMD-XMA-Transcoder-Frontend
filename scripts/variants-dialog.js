@@ -102,7 +102,7 @@
         width,
         height,
         frameRate,
-        bitrate
+        bandwidth: bitrate
       }
     }).filter(v => typeof v !== 'undefined')
     variants.sort((a, b) => ((a.width * a.height) > (b.width * b.height)) ? -1 : 1)
@@ -131,6 +131,7 @@
     }
 
     const post = () => {
+      dialog.classList.add('hidden')
       const selections = findSelectedVariants(table)
       postCallback(selectedProvisions.concat(selections))
     }
