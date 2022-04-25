@@ -49,6 +49,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
   const contentSelect = document.getElementById('content-select')
   const prioritySelect = document.getElementById('priority-select')
   const networkSelect = document.getElementById('network-select')
+  const hardwareSelect = document.getElementById('hardware-select')
   const screenCaptureButton = document.getElementById('screencap-button')
 
   const hdList = [
@@ -279,6 +280,13 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         parameters: {...parameters, ...properties }
       }}
     })
+    // Define hardware...
+    if (hardwareSelect.checked) {
+      streams = streams.map(entry => {
+        entry.parameters.hardware = 'xili'
+        return entry
+      })
+    }
     const transcoderPOST = {provisions: streams}
     subscriberStreamNames = streams.map(v => v.name)
     window.scrollTo(0, 0)    
