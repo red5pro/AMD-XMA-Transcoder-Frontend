@@ -137,7 +137,6 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       videoWidth: 1920,
       videoHeight: 1080,
       videoFPS: 30, 
-      hardware: 'xili',
       videoBR: 2000000
     },
     primaries: [],
