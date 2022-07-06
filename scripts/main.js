@@ -340,7 +340,12 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         video: bitrate
       },
       app: appContext,
-      streamName: streamNameToUse
+      streamName: streamNameToUse,
+      rtcConfiguration: {
+        iceServers: [{urls: 'stun:stun2.l.google.com:19302'}],
+        iceCandidatePoolSize: 2,
+        bundlePolicy: 'max-bundle'
+      }
     }
 
     try {
