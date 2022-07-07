@@ -25,10 +25,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 */
 ((window, red5prosdk) => {
 
+  const alreadyReg = /(.*) already start/gi
   const getRandomBetween = (min, max) => Math.floor(Math.random() * (max - min) + min)
   const template = '<div class="video-holder">' +
     '<video autoplay controls playsinline class="red5pro-subscriber"></video>' +
-    '<p class="resolution-field">0x0</p>' +
+    '<p class="resolution-field"><span class="res">0x0</span>&nbsp;&nbsp;<button class="refresh-button">refresh</button></p>' +
   '</div>';
   const getElementIdFromStreamName = name => {
     return `${name}_subscriber`
@@ -60,7 +61,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       this.streamName = streamName
       this.subscriber = undefined
       this.retryTimer = 0
-      this.retryDelay = (30 + getRandomBetween(10, 60)) * 100
+      this.retryDelay = (0 + getRandomBetween(10, 60)) * 100
       this.statsInterval = 0
       this.incomingWidth = 0
       this.incomingHeight = 0
@@ -72,6 +73,36 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       if (event.type === 'Subscribe.Time.Update') return
       console.log(`[Subscriber+${this.subscriberId}] :: ${event.type}`)
       if (event.type === 'Subscribe.Play.Unpublish' || event.type === 'Subscribe.Connection.Closed') {
+        this.retry()
+      } else if (event.type === 'Subscribe.Status') {
+        const { data: { message } } = event
+        console.log(JSON.stringify(event.data, null, 2))
+        if (alreadyReg.exec(message)) {
+          this.shutdownAndRetry()
+        }
+      }
+    }
+
+    enableRetryUI () {
+      const element = document.querySelector(`#${getElementIdFromStreamName(this.streamName)}`)
+      const resolutionField = element.parentNode.querySelector('.resolution-field')
+      if (resolutionField) {
+        const button = resolutionField.querySelector('.refresh-button')
+        button.onclick = () => {
+          this.subscriberId = generateSubscriberId(this.streamName)
+          this.config.subscriptionId = this.subscriberId
+          this.shutdownAndRetry()
+        }
+      }
+    }
+
+    async shutdownAndRetry () {
+      console.log(`SHUTDOWN & RETRY ON ${this.subscriberId}...`)
+      try {
+        await this.stop()
+      } catch (e) {
+        console.error(e)
+      } finally {
         this.retry()
       }
     }
@@ -110,6 +141,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
     async start () {
       clearTimeout(this.retryTimer)
       try {
+        this.enableRetryUI()
         this.subscriber = new red5prosdk.RTCSubscriber()
         this.subscriber.on('*', this.subscriberEventHandler)
         await this.subscriber.init(this.config)
@@ -125,6 +157,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       //      console.log(`[Subscriber+${this.subscriberId}] :: ${width}x${height}`)
       const element = document.querySelector(`#${getElementIdFromStreamName(this.streamName)}`)
       const resolutionField = element.parentNode.querySelector('.resolution-field')
+      const resField = resolutionField.querySelector('.res')
       const vidWidth = width || element.videoWidth
       const vidHeight = height || element.videoHeight
       if (element && this.incomingWidth !== vidWidth) {
@@ -135,7 +168,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       }
       this.incomingWidth = vidWidth || 0
       this.incomingHeight = vidHeight || 0
-      resolutionField.innerText = `${this.scale === 1 ? 'Original' : 'Transcoded Resolution'}:  ${this.incomingWidth}x${this.incomingHeight}`
+      resField.innerText = `${this.scale === 1 ? 'Original' : 'Transcoded Resolution'}:  ${this.incomingWidth}x${this.incomingHeight}`
     }
 
     setUpStatsCheck (connection) {

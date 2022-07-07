@@ -27,6 +27,7 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
   red5prosdk.setLogLevel(red5prosdk.LOG_LEVELS.TRACE)
 
+
   let mediaStream
   let mediaStreamConstraints
   let subscriberStreamNames = []
@@ -295,7 +296,10 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
       console.log('POST', baseUrl, transcoderPOST)
       const payload = await window.provisionUtil.postTranscode(baseUrl, transcoderPOST)
       await startBroadcastWithLevel(highestLevel, name, framerate)
-      startSubscribers(subscriberStreamNames)
+      let t = setTimeout(() => {
+        clearTimeout(t)
+        startSubscribers(subscriberStreamNames)
+      }, 3000)
     } catch (e) {
       console.error(e)
       if (/Provision already exists/.exec(e.message)) {
@@ -397,7 +401,11 @@ WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
         const scale = (length-(index)) * ((100 / length) / 100)
         const sub = new SubscriberBlock(baseConfig, name)
         sessionSubscribeContainer.appendChild(sub.init(scale))
-        sub.start()
+        if (name.indexOf('_1') > -1) {
+          sub.start()
+        } else {
+          sub.retry()
+        }
       } catch (e) {
         console.error(e)
       }
